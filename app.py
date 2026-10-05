@@ -1,14 +1,18 @@
 import numpy as np
 import streamlit as st
+import torch
 
 from model.model_loader import load_model
 from ui.visualization import plot_waveform
 from utils.logger import set_logger
 from audio.preprocessing import load_audio, extract_mfcc
 
-logger = set_logger("StrealitAPP")
+logger = set_logger("StreamlitAPP")
 
+device = torch.device("gpu" if torch.cuda.is_available() else "cpu")
 model = load_model()
+model.to(device)
+
 
 st.title("🎵 Heart Murmur Detection with LSTM")
 
@@ -25,10 +29,27 @@ if uploaded_file is not None:
         st.pyplot(fig)
         
         x_input = extract_mfcc(y, sr)
-        
-        prediction = model.predict(x_input)
-        predicted_class = np.argmax(prediction, axis = 1)[0]
-            #{0: 'artifact', 1: 'murmur', 2: 'normal'
+
+        x_input = torch.tensor(
+            x_input, dtype = torch.float32
+        )
+        x_input = x_input.transpose(1, 2)
+
+        x_input = x_input.to(device)
+
+        with torch.no_grad():
+            prediction = model(x_input)
+
+        prediction = prediction.cpu()
+
+        # Convert logits to probabilities
+        probabilities = torch.softmax(prediction, dim=1)
+
+        # Get predicted class
+        predicted_class = torch.argmax(probabilities, dim=1).item()
+
+        # Probability of the predicted class
+        predicted_probability = probabilities[0, predicted_class].item()
         st.subheader("🔮 Prediction Result")
         if predicted_class == 0:
             st.write("Artifact")
@@ -37,8 +58,8 @@ if uploaded_file is not None:
         else:
             st.write("Normal")
         
-        st.write(f"Prediction Score : {prediction}") 
+        st.write(f"Prediction Probability: {predicted_probability:.2%}")
     except Exception as e:
-        logger.info("Inference pipeline failed") 
+        logger.exception("Inference pipeline failed") 
         st.error("⚠️ An error occurred while processing the audio file.")   
                       

@@ -5,10 +5,10 @@ import streamlit as st
 from huggingface_hub import hf_hub_download
 
 from config import HF_REPO_ID, HF_MODEL_FILENAME
-from utils.logger import setup_logger
+from utils.logger import set_logger
 
 
-logger = setup_logger("ModelLoader")
+logger = set_logger("ModelLoader")
 
 
 class CNNLSTM(nn.Module):

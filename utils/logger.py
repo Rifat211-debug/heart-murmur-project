@@ -5,7 +5,7 @@ def set_logger(name : str):
     logger.setLevel(logging.INFO)
 
     if not logger.handlers:
-        handler = logging.streamHandler()
+        handler = logging.StreamHandler()
         formatter = logging.Formatter(
             "[%(asctime)s] [%(levelname)s] %(name)s - %(message)s"
         )
